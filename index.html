@@ -1,0 +1,1137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0">
+<title>GutLog</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="GutLog">
+<meta name="theme-color" content="#FAF7F2">
+<link rel="apple-touch-icon" href="icon.png">
+<link rel="manifest" href="manifest.json">
+<style>
+  :root {
+    --paper: #FAF7F2;
+    --ink: #2B2925;
+    --ink-soft: #6b665f;
+    --taupe: #8B7355;
+    --taupe-light: #E4DACB;
+    --sage: #4A6B5A;
+    --sage-light: #DCE6DF;
+    --rust: #B8654A;
+    --rust-light: #F2DFD8;
+    --line: #E8E1D5;
+    --card: #FFFFFF;
+  }
+
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    overscroll-behavior-y: contain;
+  }
+
+  body {
+    padding-bottom: 48px;
+    min-height: 100vh;
+  }
+
+  h1, h2, .serif {
+    font-family: Georgia, "Iowan Old Style", "Palatino Linotype", serif;
+  }
+
+  /* ---------- Header / date nav ---------- */
+  .topbar {
+    padding: max(20px, env(safe-area-inset-top)) 20px 14px;
+    text-align: center;
+    position: sticky;
+    top: 0;
+    background: var(--paper);
+    z-index: 10;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .brand {
+    font-size: 15px;
+    letter-spacing: 0.02em;
+    color: var(--ink-soft);
+    margin: 0 0 10px;
+    font-weight: 500;
+  }
+
+  .date-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
+  }
+
+  .date-arrow {
+    background: none;
+    border: none;
+    font-size: 22px;
+    color: var(--taupe);
+    padding: 6px 10px;
+    cursor: pointer;
+    line-height: 1;
+  }
+  .date-arrow:disabled { opacity: 0.25; }
+
+  .date-label {
+    font-size: 22px;
+    font-weight: 600;
+    min-width: 190px;
+    text-align: center;
+  }
+  .date-sub {
+    font-size: 13px;
+    color: var(--ink-soft);
+    margin-top: 2px;
+  }
+
+  .today-btn {
+    display: block;
+    margin: 8px auto 0;
+    background: none;
+    border: none;
+    color: var(--sage);
+    font-size: 13px;
+    font-weight: 600;
+    padding: 4px 10px;
+  }
+
+  .export-btn {
+    display: block;
+    margin: 10px auto 0;
+    background: var(--taupe-light);
+    border: none;
+    color: var(--taupe);
+    font-size: 13px;
+    font-weight: 700;
+    padding: 8px 16px;
+    border-radius: 20px;
+  }
+  .export-btn:active { opacity: 0.7; }
+
+  /* ---------- Layout ---------- */
+  main {
+    max-width: 520px;
+    margin: 0 auto;
+    padding: 18px 16px 20px;
+  }
+
+  .section {
+    background: var(--card);
+    border-radius: 14px;
+    margin-bottom: 16px;
+    overflow: hidden;
+    box-shadow: 0 1px 2px rgba(43,41,37,0.06);
+    border-left: 4px solid var(--line);
+  }
+  .section.tab-taupe { border-left-color: var(--taupe); }
+  .section.tab-sage { border-left-color: var(--sage); }
+  .section.tab-rust { border-left-color: var(--rust); }
+
+  .section-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 16px 10px;
+  }
+
+  .section-title {
+    font-size: 17px;
+    font-weight: 700;
+    margin: 0;
+  }
+
+  .section-count {
+    font-size: 13px;
+    color: var(--ink-soft);
+  }
+
+  .section-body {
+    padding: 0 16px 16px;
+  }
+
+  /* ---------- Buttons ---------- */
+  .btn {
+    border: none;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 600;
+    padding: 12px 16px;
+    cursor: pointer;
+  }
+  .btn-add {
+    width: 100%;
+    background: var(--paper);
+    border: 1.5px dashed var(--line);
+    color: var(--ink-soft);
+    padding: 13px;
+    border-radius: 12px;
+    font-size: 15px;
+    font-weight: 600;
+  }
+  .btn-add:active { background: var(--line); }
+
+  .btn-primary {
+    background: var(--taupe);
+    color: white;
+    width: 100%;
+  }
+  .btn-primary.sage { background: var(--sage); }
+  .btn-primary.rust { background: var(--rust); }
+
+  .btn-text {
+    background: none;
+    border: none;
+    color: var(--ink-soft);
+    font-size: 14px;
+    font-weight: 600;
+    padding: 8px;
+  }
+
+  /* ---------- Chip / pill selectors ---------- */
+  .chip-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 8px 0;
+  }
+  .chip {
+    border: 1.5px solid var(--line);
+    background: var(--paper);
+    color: var(--ink);
+    border-radius: 20px;
+    padding: 9px 14px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    user-select: none;
+  }
+  .chip.selected {
+    background: var(--taupe);
+    border-color: var(--taupe);
+    color: white;
+  }
+  .chip.selected.sage { background: var(--sage); border-color: var(--sage); }
+  .chip.selected.rust { background: var(--rust); border-color: var(--rust); }
+
+  /* Color swatches for BM color */
+  .swatch-grid { display: flex; flex-wrap: wrap; gap: 10px; margin: 8px 0; }
+  .swatch {
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    cursor: pointer;
+    position: relative;
+  }
+  .swatch.selected { border-color: var(--ink); box-shadow: 0 0 0 2px var(--paper), 0 0 0 4px var(--ink); }
+  .swatch.selected::after {
+    content: "✓";
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    color: white; font-size: 16px; font-weight: bold;
+    text-shadow: 0 0 3px rgba(0,0,0,0.5);
+  }
+
+  label.field-label {
+    display: block;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--ink-soft);
+    margin: 14px 0 4px;
+    text-transform: none;
+  }
+  label.field-label:first-child { margin-top: 0; }
+
+  textarea, input[type=text] {
+    width: 100%;
+    border: 1.5px solid var(--line);
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-size: 15px;
+    font-family: inherit;
+    background: var(--paper);
+    color: var(--ink);
+    resize: none;
+  }
+  textarea:focus, input[type=text]:focus, input[type=time]:focus {
+    outline: none;
+    border-color: var(--taupe);
+  }
+
+  input[type=time] {
+    border: 1.5px solid var(--line);
+    border-radius: 10px;
+    padding: 8px 10px;
+    font-size: 15px;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: inherit;
+  }
+
+  /* ---------- Entry cards (logged items) ---------- */
+  .entry {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 12px;
+    background: var(--paper);
+    border-radius: 10px;
+    margin-bottom: 8px;
+  }
+  .entry-main { flex: 1; }
+  .entry-title { font-size: 15px; font-weight: 600; }
+  .entry-meta { font-size: 13px; color: var(--ink-soft); margin-top: 2px; }
+  .entry-del {
+    background: none;
+    border: none;
+    color: var(--ink-soft);
+    font-size: 20px;
+    line-height: 1;
+    padding: 2px 6px;
+    cursor: pointer;
+  }
+
+  .empty-note {
+    font-size: 14px;
+    color: var(--ink-soft);
+    font-style: italic;
+    padding: 4px 0 10px;
+  }
+
+  /* ---------- Modal sheet ---------- */
+  .sheet-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(43,41,37,0.35);
+    z-index: 100;
+    display: none;
+    align-items: flex-end;
+  }
+  .sheet-backdrop.open { display: flex; }
+
+  .sheet {
+    background: var(--card);
+    width: 100%;
+    max-height: 88vh;
+    overflow-y: auto;
+    border-radius: 20px 20px 0 0;
+    padding: 10px 20px max(24px, env(safe-area-inset-bottom));
+    animation: slideup 0.22s ease-out;
+  }
+  @keyframes slideup {
+    from { transform: translateY(24px); opacity: 0.6; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+
+  .sheet-handle {
+    width: 36px; height: 4px;
+    background: var(--line);
+    border-radius: 3px;
+    margin: 6px auto 12px;
+  }
+
+  .sheet-title {
+    font-size: 19px;
+    font-weight: 700;
+    margin: 0 0 4px;
+  }
+
+  .sheet-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+  }
+  .sheet-actions .btn { flex: 1; }
+
+  /* ---------- Day summary ring ---------- */
+  .summary {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 4px 4px 18px;
+  }
+  .summary-dots {
+    display: flex;
+    gap: 6px;
+    flex: 1;
+    flex-wrap: wrap;
+  }
+  .dot-status {
+    font-size: 13px;
+    color: var(--ink-soft);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    background: var(--card);
+    border: 1px solid var(--line);
+    padding: 5px 10px 5px 8px;
+    border-radius: 20px;
+  }
+  .dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--line);
+  }
+  .dot.on.taupe { background: var(--taupe); }
+  .dot.on.sage { background: var(--sage); }
+  .dot.on.rust { background: var(--rust); }
+
+  .period-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--ink-soft);
+    margin: 12px 0 6px;
+  }
+  .period-label:first-child { margin-top: 0; }
+
+  ::-webkit-scrollbar { display: none; }
+
+  input[type=date] {
+    border: 1.5px solid var(--line);
+    border-radius: 10px;
+    padding: 8px 10px;
+    font-size: 15px;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: inherit;
+    width: 100%;
+  }
+
+  #printReport { display: none; }
+
+  @media print {
+    body * { visibility: hidden; }
+    #printReport, #printReport * { visibility: visible; }
+    #printReport {
+      display: block;
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%;
+      padding: 0;
+      background: white;
+      color: #1a1a1a;
+      font-family: Georgia, "Iowan Old Style", serif;
+    }
+    .rpt-header {
+      border-bottom: 2px solid #333;
+      padding-bottom: 10px;
+      margin-bottom: 18px;
+    }
+    .rpt-header h1 { font-size: 22px; margin: 0 0 4px; }
+    .rpt-header .rpt-range { font-size: 13px; color: #444; }
+    .rpt-day { page-break-inside: avoid; margin-bottom: 16px; }
+    .rpt-day h2 {
+      font-size: 15px;
+      background: #f0ece3;
+      padding: 6px 10px;
+      margin: 0 0 8px;
+      border-radius: 4px;
+    }
+    .rpt-table { width: 100%; border-collapse: collapse; margin-bottom: 8px; font-size: 12.5px; }
+    .rpt-table th {
+      text-align: left;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      color: #666;
+      border-bottom: 1px solid #ccc;
+      padding: 4px 8px 4px 0;
+    }
+    .rpt-table td {
+      padding: 4px 8px 4px 0;
+      border-bottom: 1px solid #eee;
+      vertical-align: top;
+    }
+    .rpt-section-label {
+      font-size: 12px;
+      font-weight: bold;
+      margin: 8px 0 4px;
+      color: #555;
+    }
+    .rpt-empty { font-size: 12px; color: #888; font-style: italic; margin-bottom: 8px; }
+    .rpt-summary-line { font-size: 12.5px; margin-bottom: 10px; color: #333; }
+    .rpt-footer { font-size: 10.5px; color: #999; margin-top: 24px; border-top: 1px solid #ddd; padding-top: 8px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <p class="brand">GutLog</p>
+  <div class="date-row">
+    <button class="date-arrow" id="prevDay">‹</button>
+    <div>
+      <div class="date-label" id="dateLabel">Today</div>
+      <div class="date-sub" id="dateSub"></div>
+    </div>
+    <button class="date-arrow" id="nextDay">›</button>
+  </div>
+  <button class="today-btn" id="jumpToday" style="display:none;">Jump to today</button>
+  <button class="export-btn" id="exportBtn">⬆ Export for doctor</button>
+</div>
+
+<main>
+
+  <div class="summary">
+    <div class="summary-dots" id="summaryDots"></div>
+  </div>
+
+  <!-- BOWEL MOVEMENTS -->
+  <div class="section tab-taupe">
+    <div class="section-head">
+      <h2 class="section-title">Bowel movements</h2>
+      <span class="section-count" id="bmCount"></span>
+    </div>
+    <div class="section-body">
+      <div id="bmList"></div>
+      <button class="btn-add" id="addBmBtn">+ Log a bowel movement</button>
+    </div>
+  </div>
+
+  <!-- MEALS -->
+  <div class="section tab-sage">
+    <div class="section-head">
+      <h2 class="section-title">Meals</h2>
+    </div>
+    <div class="section-body">
+      <div id="mealsList"></div>
+    </div>
+  </div>
+
+  <!-- WALK -->
+  <div class="section tab-sage">
+    <div class="section-head">
+      <h2 class="section-title">After-dinner walk</h2>
+    </div>
+    <div class="section-body" id="walkBody"></div>
+  </div>
+
+  <!-- MEDS -->
+  <div class="section tab-rust">
+    <div class="section-head">
+      <h2 class="section-title">Digestive meds</h2>
+      <span class="section-count" id="medCount"></span>
+    </div>
+    <div class="section-body">
+      <div id="medList"></div>
+      <button class="btn-add" id="addMedBtn">+ Log a medication</button>
+    </div>
+  </div>
+
+</main>
+
+<!-- ============ BM SHEET ============ -->
+<div class="sheet-backdrop" id="bmSheetBackdrop">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <h3 class="sheet-title">Log a bowel movement</h3>
+
+    <label class="field-label">Time of day</label>
+    <div class="chip-grid" id="bmPeriodChips">
+      <div class="chip" data-val="Morning">Morning</div>
+      <div class="chip" data-val="Afternoon">Afternoon</div>
+      <div class="chip" data-val="Evening">Evening</div>
+    </div>
+
+    <label class="field-label">Consistency (Bristol scale)</label>
+    <div class="chip-grid" id="bmConsistencyChips">
+      <div class="chip" data-val="1">1 · Hard lumps</div>
+      <div class="chip" data-val="2">2 · Lumpy</div>
+      <div class="chip" data-val="3">3 · Cracked</div>
+      <div class="chip" data-val="4">4 · Smooth</div>
+      <div class="chip" data-val="5">5 · Soft blobs</div>
+      <div class="chip" data-val="6">6 · Mushy</div>
+      <div class="chip" data-val="7">7 · Liquid</div>
+    </div>
+
+    <label class="field-label">Color</label>
+    <div class="swatch-grid" id="bmColorSwatches">
+      <div class="swatch" data-val="Brown" style="background:#7B5233;"></div>
+      <div class="swatch" data-val="Light brown" style="background:#A9744F;"></div>
+      <div class="swatch" data-val="Dark brown" style="background:#4A3220;"></div>
+      <div class="swatch" data-val="Green" style="background:#5B7A4F;"></div>
+      <div class="swatch" data-val="Yellow" style="background:#D9B341;"></div>
+      <div class="swatch" data-val="Black" style="background:#26221E;"></div>
+      <div class="swatch" data-val="Red" style="background:#A73B32;"></div>
+      <div class="swatch" data-val="Pale/clay" style="background:#D8CBAE;"></div>
+    </div>
+
+    <label class="field-label">Size</label>
+    <div class="chip-grid" id="bmSizeChips">
+      <div class="chip" data-val="Small">Small</div>
+      <div class="chip" data-val="Medium">Medium</div>
+      <div class="chip" data-val="Large">Large</div>
+    </div>
+
+    <div class="sheet-actions">
+      <button class="btn btn-text" id="bmCancel">Cancel</button>
+      <button class="btn btn-primary" id="bmSave">Save entry</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MEAL SHEET ============ -->
+<div class="sheet-backdrop" id="mealSheetBackdrop">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <h3 class="sheet-title" id="mealSheetTitle">Breakfast</h3>
+
+    <label class="field-label">What did you eat?</label>
+    <textarea id="mealText" rows="3" placeholder="e.g. oatmeal, banana, coffee"></textarea>
+
+    <label class="field-label">Any symptoms after?</label>
+    <div class="chip-grid" id="mealSymptomChips">
+      <div class="chip" data-val="None">None</div>
+      <div class="chip" data-val="Bloating">Bloating</div>
+      <div class="chip" data-val="Pain">Pain</div>
+      <div class="chip" data-val="Nausea">Nausea</div>
+      <div class="chip" data-val="Reflux">Reflux</div>
+      <div class="chip" data-val="Gas">Gas</div>
+    </div>
+
+    <div class="sheet-actions">
+      <button class="btn btn-text" id="mealCancel">Cancel</button>
+      <button class="btn btn-primary sage" id="mealSave">Save meal</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MED SHEET ============ -->
+<div class="sheet-backdrop" id="medSheetBackdrop">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <h3 class="sheet-title">Log a medication</h3>
+
+    <label class="field-label">Medication</label>
+    <div class="chip-grid" id="medPresetChips">
+      <div class="chip" data-val="Miralax">Miralax</div>
+      <div class="chip" data-val="Imodium">Imodium</div>
+      <div class="chip" data-val="Metamucil">Metamucil</div>
+      <div class="chip" data-val="Pepto-Bismol">Pepto-Bismol</div>
+      <div class="chip" data-val="Omeprazole">Omeprazole</div>
+      <div class="chip" data-val="Probiotic">Probiotic</div>
+      <div class="chip" data-val="Antacid">Antacid</div>
+      <div class="chip" data-val="Dicyclomine">Dicyclomine</div>
+      <div class="chip" data-val="__custom">Other…</div>
+    </div>
+    <input type="text" id="medCustomInput" placeholder="Type medication name" style="display:none; margin-top:8px;">
+
+    <label class="field-label">Time</label>
+    <input type="time" id="medTime">
+
+    <div class="sheet-actions">
+      <button class="btn btn-text" id="medCancel">Cancel</button>
+      <button class="btn btn-primary rust" id="medSave">Save medication</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ EXPORT SHEET ============ -->
+<div class="sheet-backdrop" id="exportSheetBackdrop">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <h3 class="sheet-title">Export for your doctor</h3>
+    <div class="empty-note" style="margin-top:2px;">Choose a date range to include. You'll get a print preview — save it as a PDF from there.</div>
+
+    <label class="field-label">From</label>
+    <input type="date" id="exportFrom">
+
+    <label class="field-label">To</label>
+    <input type="date" id="exportTo">
+
+    <div class="chip-grid" style="margin-top:12px;">
+      <div class="chip" id="exportLast7">Last 7 days</div>
+      <div class="chip" id="exportLast14">Last 14 days</div>
+      <div class="chip" id="exportLast30">Last 30 days</div>
+    </div>
+
+    <div class="sheet-actions">
+      <button class="btn btn-text" id="exportCancel">Cancel</button>
+      <button class="btn btn-primary" id="exportGo">Create PDF</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ PRINT-ONLY REPORT ============ -->
+<div id="printReport"></div>
+
+<script>
+/* ---------------- State & storage ---------------- */
+const STORAGE_KEY = 'gutlog_entries_v1';
+
+function loadAll() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch(e) { return {}; }
+}
+function saveAll(data) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+}
+
+let allData = loadAll();
+
+function dateKey(d) {
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+
+let currentDate = new Date();
+currentDate.setHours(0,0,0,0);
+
+function getDayData() {
+  const key = dateKey(currentDate);
+  if (!allData[key]) {
+    allData[key] = { bms: [], meals: { Breakfast: null, Lunch: null, Dinner: null }, walk: false, meds: [] };
+  }
+  // migrate older shape safety
+  if (!allData[key].meds) allData[key].meds = [];
+  if (!allData[key].bms) allData[key].bms = [];
+  if (!allData[key].meals) allData[key].meals = { Breakfast: null, Lunch: null, Dinner: null };
+  return allData[key];
+}
+
+function persist() {
+  saveAll(allData);
+  render();
+}
+
+/* ---------------- Date nav ---------------- */
+const dateLabel = document.getElementById('dateLabel');
+const dateSub = document.getElementById('dateSub');
+const jumpToday = document.getElementById('jumpToday');
+
+function isToday(d) {
+  const t = new Date(); t.setHours(0,0,0,0);
+  return d.getTime() === t.getTime();
+}
+
+function formatDateHeader() {
+  const t = new Date(); t.setHours(0,0,0,0);
+  const y = new Date(t); y.setDate(y.getDate()-1);
+  if (isToday(currentDate)) {
+    dateLabel.textContent = 'Today';
+  } else if (currentDate.getTime() === y.getTime()) {
+    dateLabel.textContent = 'Yesterday';
+  } else {
+    dateLabel.textContent = currentDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  }
+  dateSub.textContent = currentDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+  jumpToday.style.display = isToday(currentDate) ? 'none' : 'block';
+  document.getElementById('nextDay').disabled = isToday(currentDate);
+}
+
+document.getElementById('prevDay').onclick = () => {
+  currentDate.setDate(currentDate.getDate()-1);
+  render();
+};
+document.getElementById('nextDay').onclick = () => {
+  if (isToday(currentDate)) return;
+  currentDate.setDate(currentDate.getDate()+1);
+  render();
+};
+jumpToday.onclick = () => {
+  currentDate = new Date(); currentDate.setHours(0,0,0,0);
+  render();
+};
+
+/* ---------------- Chip helpers ---------------- */
+function wireChips(container, multi=false) {
+  container.querySelectorAll('.chip').forEach(chip => {
+    chip.onclick = () => {
+      if (!multi) {
+        container.querySelectorAll('.chip').forEach(c => c.classList.remove('selected'));
+      }
+      chip.classList.toggle('selected');
+    };
+  });
+}
+function wireSwatches(container) {
+  container.querySelectorAll('.swatch').forEach(sw => {
+    sw.onclick = () => {
+      container.querySelectorAll('.swatch').forEach(c => c.classList.remove('selected'));
+      sw.classList.add('selected');
+    };
+  });
+}
+function getSelected(container) {
+  const el = container.querySelector('.selected');
+  return el ? el.dataset.val : null;
+}
+function clearChips(container) {
+  container.querySelectorAll('.chip, .swatch').forEach(c => c.classList.remove('selected'));
+}
+
+wireChips(document.getElementById('bmPeriodChips'));
+wireChips(document.getElementById('bmConsistencyChips'));
+wireSwatches(document.getElementById('bmColorSwatches'));
+wireChips(document.getElementById('bmSizeChips'));
+wireChips(document.getElementById('mealSymptomChips'));
+
+/* ---------------- BM sheet ---------------- */
+const bmBackdrop = document.getElementById('bmSheetBackdrop');
+document.getElementById('addBmBtn').onclick = () => {
+  clearChips(document.getElementById('bmPeriodChips'));
+  clearChips(document.getElementById('bmConsistencyChips'));
+  clearChips(document.getElementById('bmColorSwatches'));
+  clearChips(document.getElementById('bmSizeChips'));
+  // preselect a sensible period based on current time if logging today
+  bmBackdrop.classList.add('open');
+};
+document.getElementById('bmCancel').onclick = () => bmBackdrop.classList.remove('open');
+bmBackdrop.onclick = (e) => { if (e.target === bmBackdrop) bmBackdrop.classList.remove('open'); };
+
+document.getElementById('bmSave').onclick = () => {
+  const period = getSelected(document.getElementById('bmPeriodChips'));
+  const consistency = getSelected(document.getElementById('bmConsistencyChips'));
+  const color = getSelected(document.getElementById('bmColorSwatches'));
+  const size = getSelected(document.getElementById('bmSizeChips'));
+  if (!period) { alert('Pick a time of day.'); return; }
+  const day = getDayData();
+  day.bms.push({ id: Date.now(), period, consistency, color, size });
+  bmBackdrop.classList.remove('open');
+  persist();
+};
+
+/* ---------------- Meal sheet ---------------- */
+const mealBackdrop = document.getElementById('mealSheetBackdrop');
+let currentMealType = null;
+
+function openMealSheet(type) {
+  currentMealType = type;
+  document.getElementById('mealSheetTitle').textContent = type;
+  const day = getDayData();
+  const existing = day.meals[type];
+  document.getElementById('mealText').value = existing ? existing.text : '';
+  clearChips(document.getElementById('mealSymptomChips'));
+  if (existing && existing.symptom) {
+    const chip = document.querySelector(`#mealSymptomChips .chip[data-val="${existing.symptom}"]`);
+    if (chip) chip.classList.add('selected');
+  }
+  mealBackdrop.classList.add('open');
+}
+document.getElementById('mealCancel').onclick = () => mealBackdrop.classList.remove('open');
+mealBackdrop.onclick = (e) => { if (e.target === mealBackdrop) mealBackdrop.classList.remove('open'); };
+
+document.getElementById('mealSave').onclick = () => {
+  const text = document.getElementById('mealText').value.trim();
+  const symptom = getSelected(document.getElementById('mealSymptomChips'));
+  const day = getDayData();
+  if (!text && !symptom) {
+    day.meals[currentMealType] = null;
+  } else {
+    day.meals[currentMealType] = { text, symptom };
+  }
+  mealBackdrop.classList.remove('open');
+  persist();
+};
+
+/* ---------------- Med sheet ---------------- */
+const medBackdrop = document.getElementById('medSheetBackdrop');
+const medPresetChips = document.getElementById('medPresetChips');
+const medCustomInput = document.getElementById('medCustomInput');
+
+wireChips(medPresetChips);
+medPresetChips.querySelectorAll('.chip').forEach(chip => {
+  chip.addEventListener('click', () => {
+    if (chip.dataset.val === '__custom' && chip.classList.contains('selected')) {
+      medCustomInput.style.display = 'block';
+      medCustomInput.focus();
+    } else if (chip.dataset.val === '__custom') {
+      medCustomInput.style.display = 'none';
+    } else {
+      medCustomInput.style.display = 'none';
+    }
+  });
+});
+
+document.getElementById('addMedBtn').onclick = () => {
+  clearChips(medPresetChips);
+  medCustomInput.style.display = 'none';
+  medCustomInput.value = '';
+  const now = new Date();
+  document.getElementById('medTime').value = String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+  medBackdrop.classList.add('open');
+};
+document.getElementById('medCancel').onclick = () => medBackdrop.classList.remove('open');
+medBackdrop.onclick = (e) => { if (e.target === medBackdrop) medBackdrop.classList.remove('open'); };
+
+document.getElementById('medSave').onclick = () => {
+  const selected = getSelected(medPresetChips);
+  let name = selected;
+  if (selected === '__custom') {
+    name = medCustomInput.value.trim();
+    if (!name) { alert('Type the medication name.'); return; }
+  }
+  if (!name) { alert('Pick or type a medication.'); return; }
+  const time = document.getElementById('medTime').value;
+  const day = getDayData();
+  day.meds.push({ id: Date.now(), name, time });
+  medBackdrop.classList.remove('open');
+  persist();
+};
+
+/* ---------------- Render ---------------- */
+const BM_COLOR_HEX = {
+  'Brown': '#7B5233', 'Light brown': '#A9744F', 'Dark brown': '#4A3220',
+  'Green': '#5B7A4F', 'Yellow': '#D9B341', 'Black': '#26221E',
+  'Red': '#A73B32', 'Pale/clay': '#D8CBAE'
+};
+
+function render() {
+  formatDateHeader();
+  const day = getDayData();
+
+  // BM list
+  const bmList = document.getElementById('bmList');
+  document.getElementById('bmCount').textContent = day.bms.length ? day.bms.length : '';
+  if (day.bms.length === 0) {
+    bmList.innerHTML = '<div class="empty-note">Nothing logged yet today.</div>';
+  } else {
+    bmList.innerHTML = day.bms.map(bm => `
+      <div class="entry">
+        <div class="entry-main">
+          <div class="entry-title">${bm.period}${bm.consistency ? ' · Type ' + bm.consistency : ''}</div>
+          <div class="entry-meta">
+            ${bm.color ? `<span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${BM_COLOR_HEX[bm.color]||'#ccc'};margin-right:5px;vertical-align:middle;"></span>${bm.color}` : ''}
+            ${bm.size ? ' · ' + bm.size : ''}
+          </div>
+        </div>
+        <button class="entry-del" onclick="deleteBm(${bm.id})">×</button>
+      </div>
+    `).join('');
+  }
+
+  // Meals
+  const mealsList = document.getElementById('mealsList');
+  const mealTypes = ['Breakfast', 'Lunch', 'Dinner'];
+  mealsList.innerHTML = mealTypes.map(type => {
+    const m = day.meals[type];
+    if (m) {
+      return `
+        <div class="entry">
+          <div class="entry-main">
+            <div class="entry-title">${type}</div>
+            <div class="entry-meta">${m.text ? escapeHtml(m.text) : ''}${m.symptom && m.symptom !== 'None' ? ' · ' + m.symptom : ''}</div>
+          </div>
+          <button class="entry-del" onclick="editMeal('${type}')" style="font-size:14px;">Edit</button>
+        </div>`;
+    } else {
+      return `<button class="btn-add" style="margin-bottom:8px;" onclick="editMeal('${type}')">+ Log ${type.toLowerCase()}</button>`;
+    }
+  }).join('');
+
+  // Walk
+  const walkBody = document.getElementById('walkBody');
+  walkBody.innerHTML = `
+    <div class="chip-grid">
+      <div class="chip ${day.walk ? 'selected sage' : ''}" onclick="toggleWalk()">${day.walk ? '✓ Took a walk' : 'Mark walk as done'}</div>
+    </div>
+  `;
+
+  // Meds
+  const medList = document.getElementById('medList');
+  document.getElementById('medCount').textContent = day.meds.length ? day.meds.length : '';
+  if (day.meds.length === 0) {
+    medList.innerHTML = '<div class="empty-note">No medications logged today.</div>';
+  } else {
+    medList.innerHTML = day.meds.slice().sort((a,b)=> (a.time||'').localeCompare(b.time||'')).map(m => `
+      <div class="entry">
+        <div class="entry-main">
+          <div class="entry-title">${escapeHtml(m.name)}</div>
+          <div class="entry-meta">${m.time ? formatTime(m.time) : ''}</div>
+        </div>
+        <button class="entry-del" onclick="deleteMed(${m.id})">×</button>
+      </div>
+    `).join('');
+  }
+
+  // Summary dots
+  const summaryDots = document.getElementById('summaryDots');
+  const mealsLogged = mealTypes.filter(t => day.meals[t]).length;
+  summaryDots.innerHTML = `
+    <div class="dot-status"><span class="dot ${day.bms.length ? 'on taupe' : ''}"></span>${day.bms.length} BM${day.bms.length===1?'':'s'}</div>
+    <div class="dot-status"><span class="dot ${mealsLogged ? 'on sage' : ''}"></span>${mealsLogged}/3 meals</div>
+    <div class="dot-status"><span class="dot ${day.walk ? 'on sage' : ''}"></span>Walk</div>
+    <div class="dot-status"><span class="dot ${day.meds.length ? 'on rust' : ''}"></span>${day.meds.length} med${day.meds.length===1?'':'s'}</div>
+  `;
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+function formatTime(t) {
+  const [h, m] = t.split(':').map(Number);
+  const period = h >= 12 ? 'PM' : 'AM';
+  const h12 = h % 12 === 0 ? 12 : h % 12;
+  return `${h12}:${String(m).padStart(2,'0')} ${period}`;
+}
+
+function deleteBm(id) {
+  const day = getDayData();
+  day.bms = day.bms.filter(b => b.id !== id);
+  persist();
+}
+function deleteMed(id) {
+  const day = getDayData();
+  day.meds = day.meds.filter(m => m.id !== id);
+  persist();
+}
+function toggleWalk() {
+  const day = getDayData();
+  day.walk = !day.walk;
+  persist();
+}
+function editMeal(type) {
+  openMealSheet(type);
+}
+
+render();
+
+/* ---------------- Export ---------------- */
+const exportBackdrop = document.getElementById('exportSheetBackdrop');
+const exportFrom = document.getElementById('exportFrom');
+const exportTo = document.getElementById('exportTo');
+
+function toInputDate(d) {
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+function setRangeDays(n) {
+  const to = new Date(); to.setHours(0,0,0,0);
+  const from = new Date(to); from.setDate(from.getDate() - (n - 1));
+  exportFrom.value = toInputDate(from);
+  exportTo.value = toInputDate(to);
+}
+
+document.getElementById('exportBtn').onclick = () => {
+  setRangeDays(7);
+  exportBackdrop.classList.add('open');
+};
+document.getElementById('exportCancel').onclick = () => exportBackdrop.classList.remove('open');
+exportBackdrop.onclick = (e) => { if (e.target === exportBackdrop) exportBackdrop.classList.remove('open'); };
+document.getElementById('exportLast7').onclick = () => setRangeDays(7);
+document.getElementById('exportLast14').onclick = () => setRangeDays(14);
+document.getElementById('exportLast30').onclick = () => setRangeDays(30);
+
+const BM_CONSISTENCY_LABEL = {
+  '1':'1 · Hard lumps','2':'2 · Lumpy','3':'3 · Cracked','4':'4 · Smooth',
+  '5':'5 · Soft blobs','6':'6 · Mushy','7':'7 · Liquid'
+};
+
+function buildReportHtml(fromDate, toDate) {
+  const days = [];
+  const cur = new Date(fromDate);
+  while (cur <= toDate) {
+    days.push(new Date(cur));
+    cur.setDate(cur.getDate() + 1);
+  }
+  // Most recent day first, matching how a doctor typically wants to review
+  days.reverse();
+
+  let totalBms = 0, totalMeals = 0, totalMeds = 0, walkDays = 0;
+
+  const dayBlocks = days.map(d => {
+    const key = dateKey(d);
+    const data = allData[key];
+    const dateStr = d.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' });
+
+    if (!data || (data.bms.length === 0 && !data.meals.Breakfast && !data.meals.Lunch && !data.meals.Dinner && !data.walk && data.meds.length === 0)) {
+      return `<div class="rpt-day"><h2>${dateStr}</h2><div class="rpt-empty">No entries logged.</div></div>`;
+    }
+
+    totalBms += data.bms.length;
+    totalMeds += data.meds.length;
+    if (data.walk) walkDays++;
+
+    let html = `<div class="rpt-day"><h2>${dateStr}</h2>`;
+
+    // BMs
+    if (data.bms.length) {
+      html += `<div class="rpt-section-label">Bowel movements (${data.bms.length})</div>`;
+      html += `<table class="rpt-table"><tr><th>Time</th><th>Consistency</th><th>Color</th><th>Size</th></tr>`;
+      data.bms.forEach(bm => {
+        html += `<tr><td>${escapeHtml(bm.period||'')}</td><td>${escapeHtml(BM_CONSISTENCY_LABEL[bm.consistency]||bm.consistency||'')}</td><td>${escapeHtml(bm.color||'')}</td><td>${escapeHtml(bm.size||'')}</td></tr>`;
+      });
+      html += `</table>`;
+    } else {
+      html += `<div class="rpt-section-label">Bowel movements</div><div class="rpt-empty">None logged.</div>`;
+    }
+
+    // Meals
+    const mealTypes = ['Breakfast','Lunch','Dinner'];
+    const loggedMeals = mealTypes.filter(t => data.meals[t]);
+    totalMeals += loggedMeals.length;
+    if (loggedMeals.length) {
+      html += `<div class="rpt-section-label">Meals</div>`;
+      html += `<table class="rpt-table"><tr><th>Meal</th><th>What was eaten</th><th>Symptoms</th></tr>`;
+      mealTypes.forEach(t => {
+        const m = data.meals[t];
+        if (m) {
+          html += `<tr><td>${t}</td><td>${escapeHtml(m.text||'—')}</td><td>${escapeHtml(m.symptom && m.symptom !== 'None' ? m.symptom : '—')}</td></tr>`;
+        }
+      });
+      html += `</table>`;
+    }
+
+    // Meds
+    if (data.meds.length) {
+      html += `<div class="rpt-section-label">Medications (${data.meds.length})</div>`;
+      html += `<table class="rpt-table"><tr><th>Medication</th><th>Time</th></tr>`;
+      data.meds.slice().sort((a,b)=>(a.time||'').localeCompare(b.time||'')).forEach(m => {
+        html += `<tr><td>${escapeHtml(m.name)}</td><td>${m.time ? formatTime(m.time) : '—'}</td></tr>`;
+      });
+      html += `</table>`;
+    }
+
+    html += `<div class="rpt-summary-line">After-dinner walk: ${data.walk ? 'Yes' : 'No'}</div>`;
+    html += `</div>`;
+    return html;
+  }).join('');
+
+  const rangeStr = `${fromDate.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})} – ${toDate.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}`;
+  const numDays = days.length;
+
+  const header = `
+    <div class="rpt-header">
+      <h1>GutLog — Symptom &amp; Bowel Diary</h1>
+      <div class="rpt-range">Report period: ${rangeStr} (${numDays} day${numDays===1?'':'s'})</div>
+      <div class="rpt-range">Summary: ${totalBms} bowel movement${totalBms===1?'':'s'} logged · ${totalMeals} meal${totalMeals===1?'':'s'} logged · ${walkDays} walk day${walkDays===1?'':'s'} · ${totalMeds} medication dose${totalMeds===1?'':'s'}</div>
+    </div>`;
+
+  const footer = `<div class="rpt-footer">Generated by GutLog on ${new Date().toLocaleString('en-US')}. Self-reported patient log.</div>`;
+
+  return header + dayBlocks + footer;
+}
+
+document.getElementById('exportGo').onclick = () => {
+  if (!exportFrom.value || !exportTo.value) { alert('Pick a start and end date.'); return; }
+  const from = new Date(exportFrom.value + 'T00:00:00');
+  const to = new Date(exportTo.value + 'T00:00:00');
+  if (from > to) { alert('"From" date must be before "To" date.'); return; }
+  document.getElementById('printReport').innerHTML = buildReportHtml(from, to);
+  exportBackdrop.classList.remove('open');
+  setTimeout(() => window.print(), 100);
+};
+
+/* ---------------- Service worker registration ---------------- */
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(()=>{});
+  });
+}
+</script>
+</body>
+</html>
